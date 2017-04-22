@@ -15,21 +15,20 @@ module CarrierWave
     end
 
     module ClassMethods
-      def encode_video(target_format, options={})
+      def encode_video(target_format, options = {})
         process encode_video: [target_format, options]
       end
 
-      def encode_ogv(opts={})
+      def encode_ogv(opts = {})
         process encode_ogv: [opts]
       end
-
     end
 
     def encode_ogv(opts)
       # move upload to local cache
-      cache_stored_file! if !cached?
+      cache_stored_file! unless cached?
 
-      tmp_path  = File.join( File.dirname(current_path), "tmpfile.ogv" )
+      tmp_path = File.join(File.dirname(current_path), 'tmpfile.ogv')
       @options = CarrierWave::Video::FfmpegOptions.new('ogv', opts)
 
       with_trancoding_callbacks do
@@ -39,12 +38,12 @@ module CarrierWave
       end
     end
 
-    def encode_video(format, opts={})
+    def encode_video(format, opts = {})
       # move upload to local cache
-      cache_stored_file! if !cached?
+      cache_stored_file! unless cached?
 
       @options = CarrierWave::Video::FfmpegOptions.new(format, opts)
-      tmp_path = File.join( File.dirname(current_path), "tmpfile.#{format}" )
+      tmp_path = File.join(File.dirname(current_path), "tmpfile.#{format}")
       file = ::FFMPEG::Movie.new(current_path)
 
       if opts[:resolution] == :same
@@ -61,9 +60,9 @@ module CarrierWave
 
       with_trancoding_callbacks do
         if progress
-          file.transcode(tmp_path, @options.format_params, @options.encoder_options) {
-              |value| progress.call(value)
-          }
+          file.transcode(tmp_path, @options.format_params, @options.encoder_options) do |value|
+            progress.call(value)
+          end
         else
           file.transcode(tmp_path, @options.format_params, @options.encoder_options)
         end
@@ -72,45 +71,45 @@ module CarrierWave
     end
 
     private
-      def with_trancoding_callbacks(&block)
-        callbacks = @options.callbacks
-        logger = @options.logger(model)
-        begin
-          send_callback(callbacks[:before_transcode])
-          setup_logger
-          block.call
-          send_callback(callbacks[:after_transcode])
-        rescue => e
-          send_callback(callbacks[:rescue])
 
-          if logger
-            logger.error "#{e.class}: #{e.message}"
-            e.backtrace.each do |b|
-              logger.error b
-            end
+    def with_trancoding_callbacks
+      callbacks = @options.callbacks
+      logger = @options.logger(model)
+      begin
+        send_callback(callbacks[:before_transcode])
+        setup_logger
+        yield
+        send_callback(callbacks[:after_transcode])
+      rescue => e
+        send_callback(callbacks[:rescue])
+
+        if logger
+          logger.error "#{e.class}: #{e.message}"
+          e.backtrace.each do |b|
+            logger.error b
           end
-
-          raise e
-
-        ensure
-          reset_logger
-          send_callback(callbacks[:ensure])
         end
-      end
 
-      def send_callback(callback)
-        model.send(callback, @options.format, @options.raw) if callback.present?
+        raise e
+      ensure
+        reset_logger
+        send_callback(callbacks[:ensure])
       end
+    end
 
-      def setup_logger
-        return unless @options.logger(model).present?
-        @ffmpeg_logger = ::FFMPEG.logger
-        ::FFMPEG.logger = @options.logger(model)
-      end
+    def send_callback(callback)
+      model.send(callback, @options.format, @options.raw) if callback.present?
+    end
 
-      def reset_logger
-        return unless @ffmpeg_logger
-        ::FFMPEG.logger = @ffmpeg_logger
-      end
+    def setup_logger
+      return unless @options.logger(model).present?
+      @ffmpeg_logger = ::FFMPEG.logger
+      ::FFMPEG.logger = @options.logger(model)
+    end
+
+    def reset_logger
+      return unless @ffmpeg_logger
+      ::FFMPEG.logger = @ffmpeg_logger
+    end
   end
 end
