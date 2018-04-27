@@ -55,7 +55,7 @@ module CarrierWave
 
         @watermark_params ||= begin
           path = @format_options[:watermark][:path]
-          position = @format_options[:watermark][:position].to_s || :bottom_right
+          position = @format_options[:watermark][:position].to_s.presence || 'center'
           margin = @format_options[:watermark][:pixels_from_edge] || @format_options[:watermark][:margin] || 10
           positioning = case position
                         when 'bottom_left'
@@ -66,6 +66,8 @@ module CarrierWave
                           "#{margin}:#{margin}"
                         when 'top_right'
                           "main_w-overlay_w-#{margin}:#{margin}"
+                        when 'center'
+                          "(main_w-overlay_w)/2:(main_h-overlay_h)/2"
                         end
 
           ['-vf', %(movie=#{path} [logo]; [in][logo] overlay=#{positioning} [out])]
