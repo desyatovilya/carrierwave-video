@@ -56,7 +56,7 @@ module CarrierWave
         @watermark_params ||= begin
           path = @format_options[:watermark][:path]
           position = @format_options[:watermark][:position].to_s.presence || 'center'
-          margin = @format_options[:watermark][:pixels_from_edge] || @format_options[:watermark][:margin]
+          margin = @format_options[:watermark][:pixels_from_edge] || @format_options[:watermark][:margin] || 10
           positioning = case position
                         when 'bottom_left'
                           "#{margin}:main_h-overlay_h-#{margin}"
